@@ -139,6 +139,18 @@ export async function GET(): Promise<Response> {
   return methodNotAllowedResponse();
 }
 
+export async function OPTIONS(): Promise<Response> {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    },
+  });
+}
+
 function methodNotAllowedResponse(): Response {
   return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
     status: 405,
@@ -212,6 +224,12 @@ function buildJsonResponse(
   sessionCookie: string | null
 ): Response {
   const responseHeaders = new Headers(headers);
+
+  // Add CORS headers
+  responseHeaders.set("Access-Control-Allow-Origin", "*");
+  responseHeaders.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  responseHeaders.set("Access-Control-Allow-Credentials", "true");
 
   if (sessionCookie) {
     responseHeaders.append("Set-Cookie", sessionCookie);
