@@ -21,13 +21,21 @@ export async function POST(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return methodNotAllowedResponse();
   }
+  
+  // Add rate limiting check (basic implementation)
+  // const rateLimitKey = request.headers.get("x-forwarded-for") || 
+  //                     request.headers.get("x-real-ip") || 
+  //                     "unknown";
+  // TODO: Implement rate limiting logic here
+  
   let sessionCookie: string | null = null;
   try {
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
+      console.error("Missing OPENAI_API_KEY environment variable");
       return new Response(
         JSON.stringify({
-          error: "Missing OPENAI_API_KEY environment variable",
+          error: "Service configuration error",
         }),
         {
           status: 500,
@@ -226,10 +234,19 @@ function buildJsonResponse(
   const responseHeaders = new Headers(headers);
 
   // Add CORS headers
-  responseHeaders.set("Access-Control-Allow-Origin", "*");
+  const allowedOrigin = process.env.NODE_ENV === "production" 
+    ? process.env.ALLOWED_ORIGINS || "https://yourdomain.com"
+    : "*";
+  responseHeaders.set("Access-Control-Allow-Origin", allowedOrigin);
   responseHeaders.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   responseHeaders.set("Access-Control-Allow-Credentials", "true");
+  responseHeaders.set("Access-Control-Max-Age", "86400");
+  
+  // Add security headers
+  responseHeaders.set("X-Content-Type-Options", "nosniff");
+  responseHeaders.set("X-Frame-Options", "DENY");
+  responseHeaders.set("X-XSS-Protection", "1; mode=block");
 
   if (sessionCookie) {
     responseHeaders.append("Set-Cookie", sessionCookie);
